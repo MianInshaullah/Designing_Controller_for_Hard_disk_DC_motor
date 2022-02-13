@@ -1,0 +1,105 @@
+%%  A hard disk is a data storage device. It uses magnetic storage system
+%%  along with electronic hardware to access the data. The electronic circuit
+%% consists of a dc motor. The dc motor has the following state space. 
+
+%% first clear the command window and workspace
+clear; 
+clc; 
+close all; 
+
+%Declare the values for J, b, k, R, and L
+j = 3.2; b = 3.5; k = 0.0274; r = 4; l = 2.75;
+
+%% Create array A, B, C, and D 
+%Note: Matrix B and D should have the same column size
+%mA = [0 1 0; 0 -b/j k/j; 0 k/l -r/l];
+%mB = [0 0;0 0; 1/l 0];
+%mC = [1 0 0; 0 0 0];
+mD = [0 0;0 0];
+
+mA = [0 1 0; 0 -b/j k/j; 0 k/l -r/l];
+mB = [0;0; 1/l];
+mC = [1 0 0];
+mD = [0];
+
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%% A. Checking the stability of the system
+%% Checking stability of the system by finding pole of the Transfer Func. 
+%Method: Convert the State-space model to a Transfer function and find if
+%any values are positive. 
+
+[num,denum] = ss2tf(mA,mB,mC,mD,1);
+poles_of_tf = roots(denum);
+
+disp('The Poles of the Transfer Function are the following '); 
+poles_of_tf
+
+if (any(poles_of_tf<0)~= 0) 
+    disp ('Poles contain non-negative value(s); therefore, the system is unstable');
+end
+
+
+
+%% Checking stability of the system by finding eigenvalues of matrix A
+%Method: Find the eigen value of matrix A and see if its negative or
+%non-negative
+
+eigen_values = eig(mA); 
+disp('The eigenvalues of matrix A are');
+eigen_values
+
+if (any(eigen_values<0) ~= 0)
+    disp ('Eigenvaluese contain non-negative value(s); therefore the system is unstable');
+end
+
+
+%% Checking the stability of the system using step response; 
+%Method: Check if the step response of the system is unbounded
+
+step(mA,mB,mC,mD)
+title('Step response of the system')
+ylabel('Amplitude in response to unit step');
+
+
+%% Checking the stability of the system using root locus method
+%Method: The root locus method finds the roots of the Characteristics
+%equation. 
+
+figure;
+sys = tf(num(1,:),denum)
+rlocus(sys)
+title('Root locus of the system')
+
+
+figure;
+gaink = [0:1:10];
+rlocus(sys,gaink)
+
+%% C. Compute the controllability matrix for the system
+%If the system is controllable, place the controller eigenvalues at
+%(-14,-33,-33) and observer eigenvales at a locatin which is faster than
+%the controller eigenvalues
+
+ctrl = ctrb(mA, mB);
+rank_ctrl = rank(ctrl);
+disp('The rank of the controllability matrix is')
+rank_ctrl  
+
+order = size(mA, 1);
+disp('The order of the system is')
+order
+
+if (rank_ctrl == order)
+    disp('The rank of system is equal to order of the system. The system is controllable');
+end
+
+%designing controller
+%note matrix C is not an identity matrix; therefore, we need observer
+%values
+rank(mB)
+desired.ob.egnvalues = [-20,-40, -50];
+mL = place(mA',mC', desired.ob.egnvalues)';
+
+desired_egnvalues = [-14, -33, -33];
+mK = place(mA, mB, desired_egnvalues);
+
