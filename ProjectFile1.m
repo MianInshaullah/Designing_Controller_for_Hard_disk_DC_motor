@@ -97,10 +97,18 @@ end
 %designing controller
 %note matrix C is not an identity matrix; therefore, we need observer
 %values
+mP = [mB, mA*mB];
+mQ = [mC;mC*mA];
+
+disp('The rank of Matrix P is ')
+rank(mP)
+disp('The rank of Matrix Q is ')
+rank(mQ)
+
 rank(mB)
-desired.ob.egnvalues = [-20,-40, -50];
-mL = place(mA',mC', desired.ob.egnvalues)';
+desired.ob.egnvalues = [-20, -40, -50];
+mL = acker(mA',mC', desired.ob.egnvalues)';
 
 desired_egnvalues = [-14, -33, -33];
-mK = place(mA, mB, desired_egnvalues);
+mK = acker(mA, mB, desired_egnvalues);
 
