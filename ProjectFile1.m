@@ -1,6 +1,6 @@
-%%  A hard disk is a data storage device. It uses magnetic storage system
-%%  along with electronic hardware to access the data. The electronic circuit
-%% consists of a dc motor. The dc motor has the following state space. 
+% A hard disk is a data storage device. It uses magnetic storage system
+% along with electronic hardware to access the data. The electronic circuit
+% consists of a dc motor. The dc motor has the following state space. 
 
 %% first clear the command window and workspace
 clear; 
@@ -11,26 +11,19 @@ close all;
 j = 3.2; b = 3.5; k = 0.0274; r = 4; l = 2.75;
 
 %% Create array A, B, C, and D 
-%Note: Matrix B and D should have the same column size
-%mA = [0 1 0; 0 -b/j k/j; 0 k/l -r/l];
-%mB = [0 0;0 0; 1/l 0];
-%mC = [1 0 0; 0 0 0];
-%mD = [0 0;0 0];
 
 mA = [0 1 0; 0 -b/j k/j; 0 k/l -r/l];
 mB = [0;0; 1/l];
 mC = [1 0 0];
 mD = [0];
 
-%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%% A. Checking the stability of the system
+
 %% Checking stability of the system by finding pole of the Transfer Func. 
 %Method: Convert the State-space model to a Transfer function and find if
 %any values are positive. 
 
 [num,denum] = ss2tf(mA,mB,mC,mD,1);
 poles_of_tf = roots(denum);
-
 disp('The Poles of the Transfer Function are the following '); 
 poles_of_tf
 
@@ -72,12 +65,12 @@ title('Root locus of the system')
 
 
 figure;
-gaink = [0:1:10];
+gaink = (0:1:10);
 rlocus(sys,gaink)
 
-%% C. Compute the controllability matrix for the system
+%% Compute the controllability matrix for the system
 %If the system is controllable, place the controller eigenvalues at
-%(-14,-33,-33) and observer eigenvales at a locatin which is faster than
+%(-14,-33,-33) and observer eigenvales at a location which is faster than
 %the controller eigenvalues
 
 ctrl = ctrb(mA, mB);
@@ -85,30 +78,31 @@ rank_ctrl = rank(ctrl);
 disp('The rank of the controllability matrix is')
 rank_ctrl  
 
-order = size(mA, 1);
+obsrvr = obsv(mA, mC);
+rank_obsrvr = rank(obsrvr);
+disp('The rank of the observer matrix is')
+rank_obsrvr
+
+order = size(mA,1);
 disp('The order of the system is')
 order
 
-if (rank_ctrl == order)
-    disp('The rank of system is equal to order of the system. The system is controllable');
+if (rank_ctrl && rank_obsrvr == order)
+    disp('The rank of system is equal to order of the system. The system is controllable and observable');
 end
 
+%% Designing a Observer based State feedback controller
+%note matrix C is not an identity matrix; therefore, we need observer values
 
-%designing controller
-%note matrix C is not an identity matrix; therefore, we need observer
-%values
-mP = [mB, mA*mB];
-mQ = [mC;mC*mA];
-
-disp('The rank of Matrix P is ')
-rank(mP)
-disp('The rank of Matrix Q is ')
-rank(mQ)
-
-rank(mB)
-desired.ob.egnvalues = [-20, -40, -50];
+desired.ob.egnvalues = [-15,-34, -34];
 mL = acker(mA',mC', desired.ob.egnvalues)';
 
 desired_egnvalues = [-14, -33, -33];
 mK = acker(mA, mB, desired_egnvalues);
+
+%steady state errror after designing controller
+ACL = mA - mB*mK;   %A-L*C gives you eig(ACL) the observer desired values
+[nu,de] = ss2tf(ACL,mB,mC,mD);
+g = tf(nu,de)    %stable transfer function 
+eig(ACL)         %stable after designing controller,
 
